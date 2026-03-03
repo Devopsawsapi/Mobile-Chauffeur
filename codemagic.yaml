@@ -1,4 +1,20 @@
 workflows:
+
+  # ── BUILD ANDROID ──
+  android-release:
+    name: Android Release APK
+    max_build_duration: 60
+    environment:
+      flutter: stable
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Build APK
+        script: flutter build apk --release
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+
+  # ── BUILD iOS ──
   ios-release:
     name: iOS Release
     max_build_duration: 60
@@ -9,8 +25,22 @@ workflows:
     scripts:
       - name: Get Flutter packages
         script: flutter pub get
+
+      - name: Set iOS deployment target 14.0
+        script: |
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 13.0/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 12.0/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0/IPHONEOS_DEPLOYMENT_TARGET = 14.0/g' ios/Runner.xcodeproj/project.pbxproj
+
+      - name: Install CocoaPods
+        script: |
+          cd ios
+          pod deintegrate || true
+          pod install --repo-update
+
       - name: Build iOS
         script: |
           flutter build ios --release --no-codesign
+
     artifacts:
       - build/ios/iphoneos/Runner.app

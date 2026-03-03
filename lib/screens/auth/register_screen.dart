@@ -27,7 +27,7 @@ class _RegState extends State<RegisterScreen> {
   final _passCtrl  = TextEditingController();
   final _confCtrl  = TextEditingController();
   Country? _resCt; String? _resCity;
-  Country? _birthCt;
+  Country? _birthCt; String? _birthCity;   // ✅ ville de naissance
   bool _obscure = true, _loading = false;
   String? _birthDate;
 
@@ -86,6 +86,9 @@ class _RegState extends State<RegisterScreen> {
     }
     if (_birthCt == null) {
       snack(context, 'Pays de naissance obligatoire', error: true); return;
+    }
+    if (_birthCity == null || _birthCity!.isEmpty) {
+      snack(context, 'Ville de naissance obligatoire', error: true); return;
     }
     try {
       final parts = _birthDate!.split('/');
@@ -169,8 +172,9 @@ class _RegState extends State<RegisterScreen> {
       'country':        _resCt?.name ?? '',
       'country_code':   _resCt?.code ?? '',
       'city':           _resCity ?? '',
-      'birth_date':     _convertDate(_birthDate ?? ''),   // ✅ YYYY-MM-DD
+      'birth_date':     _convertDate(_birthDate ?? ''),
       'country_birth':  _birthCt?.code ?? '',
+      'birth_place':    _birthCity ?? '',             // ✅ ville de naissance
       'vehicle_brand':   _brandCtrl.text.trim(),
       'vehicle_model':   _modelCtrl.text.trim(),
       'vehicle_plate':   _plateCtrl.text.trim(),
@@ -180,15 +184,15 @@ class _RegState extends State<RegisterScreen> {
       'vehicle_city':    _vCity ?? '',
       'id_doc_type':       _docType ?? '',
       'id_doc_country':    _idCt?.code ?? '',
-      'id_doc_issued_at':  _convertDate(_idEm),           // ✅ YYYY-MM-DD
-      'id_doc_expires_at': _convertDate(_idEx),           // ✅ YYYY-MM-DD
+      'id_doc_issued_at':  _convertDate(_idEm),
+      'id_doc_expires_at': _convertDate(_idEx),
       'license_country':    _licCt?.code ?? '',
-      'license_issued_at':  _convertDate(_licEm),         // ✅ YYYY-MM-DD
-      'license_expires_at': _convertDate(_licEx),         // ✅ YYYY-MM-DD
-      'insurance_issued_at':  _convertDate(_insEm),       // ✅ YYYY-MM-DD
-      'insurance_expires_at': _convertDate(_insEx),       // ✅ YYYY-MM-DD
-      'gray_card_issued_at':  _convertDate(_grEm),        // ✅ YYYY-MM-DD
-      'gray_card_expires_at': _convertDate(_grEx),        // ✅ YYYY-MM-DD
+      'license_issued_at':  _convertDate(_licEm),
+      'license_expires_at': _convertDate(_licEx),
+      'insurance_issued_at':  _convertDate(_insEm),
+      'insurance_expires_at': _convertDate(_insEx),
+      'gray_card_issued_at':  _convertDate(_grEm),
+      'gray_card_expires_at': _convertDate(_grEx),
     }, files: {
       if (_photoId       != null) 'photo':           _photoId!,
       if (_photoIdRecto  != null) 'id_doc_recto':    _photoIdRecto!,
@@ -333,13 +337,30 @@ class _RegState extends State<RegisterScreen> {
               const Icon(Icons.calendar_today_outlined, color: C.muted, size: 18),
             ]))),
         const SizedBox(height: 14),
+
+        // ✅ Dropdown pays de naissance
         appDrop<Country>(
           hint: '🌍  Pays de naissance *',
           value: _birthCt,
           items: kCountries,
           builder: (c) => Text('${c.flag}  ${c.name}'),
-          onChanged: (v) => setState(() => _birthCt = v),
+          onChanged: (v) => setState(() {
+            _birthCt = v;
+            _birthCity = null;    // ✅ reset ville si pays change
+          }),
           prefix: const Icon(Icons.place_outlined, color: C.muted, size: 20)),
+
+        // ✅ Dropdown ville de naissance (apparaît après sélection du pays)
+        if (_birthCt != null) ...[
+          const SizedBox(height: 14),
+          appDrop<String>(
+            hint: '🏙️  Ville de naissance *',
+            value: _birthCity,
+            items: _birthCt!.cities,
+            builder: (c) => Text(c),
+            onChanged: (v) => setState(() => _birthCity = v),
+            prefix: const Icon(Icons.location_city_outlined, color: C.muted, size: 20)),
+        ],
 
         const SLabel('PAYS & VILLE DE RÉSIDENCE'),
         appDrop<Country>(hint: '🌍  Pays de résidence', value: _resCt, items: kCountries,
@@ -348,7 +369,8 @@ class _RegState extends State<RegisterScreen> {
           prefix: const Icon(Icons.public_outlined, color: C.muted, size: 20)),
         if (_resCt != null) ...[
           const SizedBox(height: 14),
-          appDrop<String>(hint: 'Ville', value: _resCity, items: _resCt!.cities,
+          appDrop<String>(hint: 'Ville de résidence', value: _resCity,
+            items: _resCt!.cities,
             builder: (c) => Text(c),
             onChanged: (v) => setState(() => _resCity = v),
             prefix: const Icon(Icons.location_city_outlined, color: C.muted, size: 20)),
