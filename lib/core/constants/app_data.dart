@@ -1,0 +1,77 @@
+import '../models/country_model.dart';
+
+final List<Country> kCountries = [
+  Country(name:'Congo (Brazzaville)',code:'CG',dial:'+242',flag:'🇨🇬',
+    cities:['Brazzaville','Pointe-Noire','Dolisie','Nkayi','Impfondo','Ouesso','Sibiti','Gamboma'],
+    operators:['Airtel Congo','MTN Congo']),
+  Country(name:'Congo (RDC)',code:'CD',dial:'+243',flag:'🇨🇩',
+    cities:['Kinshasa','Lubumbashi','Mbuji-Mayi','Kisangani','Goma','Bukavu','Matadi','Kolwezi'],
+    operators:['Airtel','Vodacom','Orange','Africell']),
+  Country(name:'Cameroun',code:'CM',dial:'+237',flag:'🇨🇲',
+    cities:['Yaoundé','Douala','Bamenda','Maroua','Bafoussam','Ngaoundéré'],
+    operators:['MTN Cameroon','Orange Cameroun']),
+  Country(name:'France',code:'FR',dial:'+33',flag:'🇫🇷',
+    cities:['Paris','Lyon','Marseille','Toulouse','Nice','Nantes','Strasbourg','Bordeaux'],
+    operators:['Orange','SFR','Bouygues','Free Mobile']),
+  Country(name:'Belgique',code:'BE',dial:'+32',flag:'🇧🇪',
+    cities:['Bruxelles','Anvers','Gand','Liège','Bruges','Namur','Charleroi'],
+    operators:['Proximus','Base','Orange Belgium']),
+  Country(name:'Gabon',code:'GA',dial:'+241',flag:'🇬🇦',
+    cities:['Libreville','Port-Gentil','Franceville','Oyem','Moanda','Mouila'],
+    operators:['Airtel Gabon','Moov Africa']),
+  Country(name:"Côte d'Ivoire",code:'CI',dial:'+225',flag:'🇨🇮',
+    cities:['Abidjan','Bouaké','Daloa','Korhogo','Yamoussoukro'],
+    operators:['Orange CI','MTN CI','Moov Africa']),
+  Country(name:'Sénégal',code:'SN',dial:'+221',flag:'🇸🇳',
+    cities:['Dakar','Thiès','Kaolack','Saint-Louis','Ziguinchor','Touba'],
+    operators:['Orange Sénégal','Free Sénégal','Expresso']),
+  Country(name:'Mali',code:'ML',dial:'+223',flag:'🇲🇱',
+    cities:['Bamako','Sikasso','Mopti','Koutiala','Kayes'],
+    operators:['Orange Mali','Moov Africa Mali']),
+  Country(name:'Burkina Faso',code:'BF',dial:'+226',flag:'🇧🇫',
+    cities:['Ouagadougou','Bobo-Dioulasso','Koudougou'],
+    operators:['Orange BF','Moov Africa BF','Telecel']),
+  Country(name:'Niger',code:'NE',dial:'+227',flag:'🇳🇪',
+    cities:['Niamey','Zinder','Maradi','Agadez'],
+    operators:['Airtel Niger','Orange Niger','Moov Africa']),
+  Country(name:'Togo',code:'TG',dial:'+228',flag:'🇹🇬',
+    cities:['Lomé','Sokodé','Kara','Atakpamé'],
+    operators:['Togocel','Moov Africa Togo']),
+  Country(name:'Canada',code:'CA',dial:'+1',flag:'🇨🇦',
+    cities:['Montréal','Toronto','Vancouver','Ottawa','Calgary','Québec'],
+    operators:['Bell','Rogers','Telus','Vidéotron']),
+  Country(name:'Suisse',code:'CH',dial:'+41',flag:'🇨🇭',
+    cities:['Genève','Zurich','Bâle','Lausanne','Berne'],
+    operators:['Swisscom','Sunrise','Salt']),
+  Country(name:'Maroc',code:'MA',dial:'+212',flag:'🇲🇦',
+    cities:['Casablanca','Rabat','Marrakech','Fès','Tanger','Agadir'],
+    operators:['Maroc Telecom','Orange Maroc','Inwi']),
+  Country(name:'Algérie',code:'DZ',dial:'+213',flag:'🇩🇿',
+    cities:['Alger','Oran','Constantine','Annaba','Blida'],
+    operators:['Mobilis','Djezzy','Ooredoo']),
+  Country(name:'Portugal',code:'PT',dial:'+351',flag:'🇵🇹',
+    cities:['Lisbonne','Porto','Braga','Coimbra','Amadora'],
+    operators:['MEO','NOS','Vodafone PT']),
+  Country(name:'États-Unis',code:'US',dial:'+1',flag:'🇺🇸',
+    cities:['New York','Los Angeles','Chicago','Houston','Miami'],
+    operators:["AT&T","Verizon","T-Mobile"]),
+  Country(name:'Allemagne',code:'DE',dial:'+49',flag:'🇩🇪',
+    cities:['Berlin','Munich','Hambourg','Cologne','Francfort'],
+    operators:['Deutsche Telekom','Vodafone DE','O2']),
+  Country(name:'Espagne',code:'ES',dial:'+34',flag:'🇪🇸',
+    cities:['Madrid','Barcelone','Valence','Séville','Bilbao'],
+    operators:['Movistar','Orange ES','Vodafone ES']),
+];
+
+const kIdDocTypes   = ['Passeport', "Carte d'Identité Nationale", 'Carte de Résident', 'Carte Consulaire'];
+const kVehicleTypes = ['Standard', 'Confort', 'Van', 'PMR (Personnes à Mobilité Réduite)'];
+const kCarColors    = ['Blanc','Noir','Gris','Argent','Rouge','Bleu','Vert','Marron','Beige','Orange','Jaune','Violet'];
+
+// Nombre de chiffres attendus par indicatif
+const Map<String, int> kPhoneDigits = {
+  '+242': 9, '+243': 9, '+237': 9, '+241': 8,
+  '+225': 10, '+221': 9, '+212': 9, '+213': 9,
+  '+33': 9, '+1': 10,
+};
+
+int expectedPhoneDigits(String? dial) => kPhoneDigits[dial] ?? 9;
