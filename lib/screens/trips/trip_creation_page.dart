@@ -31,9 +31,10 @@ class _TripState extends State<TripCreationPage> {
     return '${p[2]}-${p[1]}-${p[0]}';
   }
 
-  // ✅ Formate l'heure en HH:mm
+  // FIX: departure_time est VARCHAR(10) en DB → HH:mm:ss (9 chars max)
+  // ERREUR PRÉCÉDENTE: le controller Laravel concaténait date+heure → "2026-03-06 09:00:00" (19 chars > 10)
   String _formatTime(TimeOfDay t) =>
-    '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00';
 
   // ✅ Sélection de l'heure
   Future<void> _pickTime() async {
@@ -61,16 +62,28 @@ class _TripState extends State<TripCreationPage> {
 
     setState(() => _loading = true);
 
+    // FIX: colonnes DB réelles = pickup_address / dropoff_address / departure_time (STRING 10)
+    // departure_time STRING(10) → HH:mm:ss suffit (pas de date concaténée)
     final res = await ApiService.post(Api.trips, {
+      // Colonnes principales (migration initiale)
+      'pickup_address':    _fromCtrl.text.trim(),       // DB: pickup_address
+      'dropoff_address':   _toCtrl.text.trim(),          // DB: dropoff_address
+      // Alias aussi envoyés pour compatibilité controller
       'departure':         _fromCtrl.text.trim(),
       'destination':       _toCtrl.text.trim(),
+      // Tarification
       'price_per_seat':    double.tryParse(_prCtrl.text) ?? 0,
+      'amount':            double.tryParse(_prCtrl.text) ?? 0,
       'available_seats':   int.tryParse(_seCtrl.text)    ?? 3,
-      'departure_date':    _convertDate(_depDate),         // ✅ YYYY-MM-DD
-      'departure_time':    _formatTime(_depTime!),         // ✅ HH:mm
+      // Date/heure — departure_time est VARCHAR(10), envoyer HH:mm:ss
+      'departure_date':    _convertDate(_depDate),
+      'departure_time':    _formatTime(_depTime!),       // HH:mm:ss
+      // Bagages
       'luggage_included':  _bags,
+      'luggage_kg':        _bags,                        // colonne intercity migration
       'extra_luggage_fee': _extra ? (double.tryParse(_exCtrl.text) ?? 0) : 0,
-      'vehicle_type':      _vType ?? '',
+      // Véhicule
+      'vehicle_type':      _vType ?? 'Confort',
     });
 
     setState(() => _loading = false);

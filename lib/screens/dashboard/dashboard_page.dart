@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../core/constants/colors.dart';
 import '../../core/constants/api_endpoints.dart';
 import '../../core/services/api_service.dart';
@@ -8,20 +9,23 @@ import '../../widgets/tt_logo.dart';
 import '../../widgets/app_widgets.dart';
 import '../profile/wallet_page.dart';
 import '../chat/support_chat_page.dart';
+import '../trips/trip_history_page.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  final VoidCallback? onNewTrip;      // ✅ callback pour aller à l'onglet Trajet
+  final VoidCallback? onHistory;      // ✅ callback pour ouvrir l'historique
+  const DashboardPage({super.key, this.onNewTrip, this.onHistory});
   @override State<DashboardPage> createState() => _DashState();
 }
 
 class _DashState extends State<DashboardPage> {
   bool _loadData = false, _loadStatus = false;
 
-  Color    get _sc => currentDriver.status=='online' ? C.online : currentDriver.status=='pause' ? C.pause : C.offline;
-  String   get _sl => currentDriver.status=='online' ? 'En ligne' : currentDriver.status=='pause' ? 'En pause' : 'Hors ligne';
-  IconData get _si => currentDriver.status=='online'
+  Color    get _sc => currentDriver.driverStatus=='online' ? C.online : currentDriver.driverStatus=='pause' ? C.pause : C.offline;
+  String   get _sl => currentDriver.driverStatus=='online' ? 'En ligne' : currentDriver.driverStatus=='pause' ? 'En pause' : 'Hors ligne';
+  IconData get _si => currentDriver.driverStatus=='online'
     ? Icons.wifi_tethering_rounded
-    : currentDriver.status=='pause' ? Icons.pause_circle_outline_rounded : Icons.wifi_tethering_off_rounded;
+    : currentDriver.driverStatus=='pause' ? Icons.pause_circle_outline_rounded : Icons.wifi_tethering_off_rounded;
 
   @override void initState() { super.initState(); _load(); }
 
@@ -35,9 +39,24 @@ class _DashState extends State<DashboardPage> {
   Future<void> _changeStatus(String s) async {
     setState(() => _loadStatus = true);
     final res = await ApiService.put(Api.status, {'status': s});
-    if (res['success'] == true) setState(() => currentDriver.status = s);
+    if (res['success'] == true) setState(() => currentDriver.driverStatus = s);
     else if (mounted) snack(context, res['message'] ?? 'Erreur', error: true);
     setState(() => _loadStatus = false);
+  }
+
+  Future<Position?> _getPosition() async {
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return null;
+      }
+      if (permission == LocationPermission.deniedForever) return null;
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+    } catch (_) { return null; }
   }
 
   void _sos(BuildContext ctx) => showDialog(context: ctx, builder: (_) => AlertDialog(
@@ -55,8 +74,12 @@ class _DashState extends State<DashboardPage> {
       GestureDetector(
         onTap: () async {
           Navigator.pop(ctx);
-          final res = await ApiService.post(Api.sos,
-            {'latitude': 0.0, 'longitude': 0.0, 'message': 'Alerte SOS depuis app chauffeur'});
+          final position = await _getPosition();
+          final res = await ApiService.post(Api.sos, {
+            'lat': position?.latitude  ?? 0.0,
+            'lng': position?.longitude ?? 0.0,
+            'message': 'Alerte SOS depuis app chauffeur',
+          });
           if (mounted) snack(ctx,
             res['success']==true ? '🚨 SOS envoyé ! Secours alertés.' : res['message'] ?? 'Erreur',
             error: res['success'] != true);
@@ -166,7 +189,9 @@ class _DashState extends State<DashboardPage> {
                 style: TextStyle(color: C.text, fontSize: 17, fontWeight: FontWeight.w700)),
               const SizedBox(height: 14),
               Row(children: [
-                Expanded(child: _qBtn(Icons.add_road_rounded, 'Nouveau trajet', C.blue, () {})),
+                // ✅ Nouveau trajet — utilise le callback pour changer l'onglet
+                Expanded(child: _qBtn(Icons.add_road_rounded, 'Nouveau trajet', C.blue,
+                  () { if (widget.onNewTrip != null) widget.onNewTrip!(); })),
                 const SizedBox(width: 12),
                 Expanded(child: _qBtn(Icons.account_balance_wallet_rounded, 'Mon wallet', C.orange,
                   () => Navigator.push(context, MaterialPageRoute(builder: (_) => const WalletPage())))),
@@ -176,7 +201,9 @@ class _DashState extends State<DashboardPage> {
                 Expanded(child: _qBtn(Icons.headset_mic_outlined, 'Support', C.success,
                   () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SupportChatPage())))),
                 const SizedBox(width: 12),
-                Expanded(child: _qBtn(Icons.history_rounded, 'Historique', C.muted, () {})),
+                // ✅ Historique — ouvre TripHistoryPage
+                Expanded(child: _qBtn(Icons.history_rounded, 'Historique', C.muted,
+                  () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TripHistoryPage())))),
               ]),
               const SizedBox(height: 20),
             ]),
