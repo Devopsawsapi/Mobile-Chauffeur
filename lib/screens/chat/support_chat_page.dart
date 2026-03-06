@@ -123,30 +123,38 @@ class _SupportChatPageState extends State<SupportChatPage> {
           if (event.data == null) return;
 
           final data = json.decode(event.data);
-
           if (!mounted) return;
 
+          final content = (data['content'] ?? '').toString();
+          final sType   = (data['sender_type'] ?? '').toString();
+          final sender  = sType.contains('Driver') ? 'driver' : 'support';
+
+          // ✅ FIX double message : si le message est déjà présent en "_pending"
+          // (ajouté optimistement par _send), on le confirme plutôt que de le dupliquer
+          final pendingIdx = _msgs.lastIndexWhere((m) =>
+            m['content'] == content &&
+            m['sender']  == sender  &&
+            m['_pending'] == true);
+
           setState(() {
-
-            _msgs.add({
-
-              'content': data['content'],
-
-              'sender':
-                  data['sender_type']
-                          .toString()
-                          .contains('Driver')
-                      ? 'driver'
-                      : 'support',
-
-              'created_at': data['created_at'],
-
-            });
-
+            if (pendingIdx != -1) {
+              // Remplace le message pending par la version confirmée
+              _msgs[pendingIdx] = {
+                'content':    content,
+                'sender':     sender,
+                'created_at': data['created_at'],
+              };
+            } else {
+              // Nouveau message entrant (de l'autre côté)
+              _msgs.add({
+                'content':    content,
+                'sender':     sender,
+                'created_at': data['created_at'],
+              });
+            }
           });
 
           _scrollBottom();
-
         },
       );
 
@@ -168,18 +176,13 @@ class _SupportChatPageState extends State<SupportChatPage> {
     _ctrl.clear();
 
     setState(() {
-
       _msgs.add({
-
-        'content': t,
-        'sender': 'driver',
-        'created_at':
-            DateTime.now().toIso8601String()
-
+        'content':    t,
+        'sender':     'driver',
+        'created_at': DateTime.now().toIso8601String(),
+        '_pending':   true,   // ✅ marqué pending pour la déduplication Pusher
       });
-
       _sending = true;
-
     });
 
     _scrollBottom();

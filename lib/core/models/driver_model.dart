@@ -57,12 +57,25 @@ class DriverModel {
       vehicleModel:  d['vehicle_model'],
       vehicleColor:  d['vehicle_color'],
       vehiclePlate:  d['vehicle_plate'],
-      profilePhoto:  d['profile_photo'],
+      // ✅ FIX photo : si chemin relatif → ajouter l'URL de base du serveur
+      profilePhoto: _buildPhotoUrl(d['profile_photo']),
     );
   }
 
   double get commission => todayRevenue * commissionRate;
   double get net        => todayRevenue - commission;
+
+  // ✅ Construit l'URL complète de la photo depuis un chemin relatif ou absolu
+  static String? _buildPhotoUrl(dynamic raw) {
+    if (raw == null || raw.toString().isEmpty) return null;
+    final s = raw.toString();
+    // Déjà une URL complète
+    if (s.startsWith('http://') || s.startsWith('https://')) return s;
+    // Chemin relatif → ajouter la base du serveur
+    const base = 'https://toptopgo2026-production.up.railway.app/storage/';
+    final path = s.startsWith('/') ? s.substring(1) : s;
+    return '$base$path';
+  }
   String get fullName   => '$firstName $lastName'.trim();
   String get initials {
     final f = firstName.isNotEmpty ? firstName[0] : '';

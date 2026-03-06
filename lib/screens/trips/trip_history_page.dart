@@ -112,6 +112,44 @@ class _THState extends State<TripHistoryPage> with SingleTickerProviderStateMixi
             child: const Text('Confirmer', style: TextStyle(color: Colors.white))),
         ])) ?? false;
 
+  // ── Formate la date depuis n'importe quel format Laravel ──────────────
+  // Gère : "2026-03-07", "2026-03-07T23:00:00.000000Z", "07/03/2026", null
+  String _fmtDate(dynamic raw) {
+    if (raw == null || raw.toString().isEmpty) return '';
+    final s = raw.toString();
+    try {
+      // ISO8601 complet : "2026-03-07T23:00:00.000000Z"
+      if (s.contains('T')) {
+        final dt = DateTime.parse(s).toLocal();
+        return '${dt.day.toString().padLeft(2,'0')}/'
+               '${dt.month.toString().padLeft(2,'0')}/'
+               '${dt.year}';
+      }
+      // YYYY-MM-DD
+      if (s.contains('-') && s.length >= 10) {
+        final p = s.substring(0,10).split('-');
+        if (p.length == 3) return '${p[2]}/${p[1]}/${p[0]}';
+      }
+      // Déjà DD/MM/YYYY
+      return s.length > 10 ? s.substring(0, 10) : s;
+    } catch (_) { return s; }
+  }
+
+  // ── Formate l'heure HH:mm depuis HH:mm:ss ou ISO8601 ─────────────────
+  String _fmtTime(dynamic raw) {
+    if (raw == null || raw.toString().isEmpty) return '';
+    final s = raw.toString();
+    try {
+      if (s.contains('T')) {
+        final dt = DateTime.parse(s).toLocal();
+        return '${dt.hour.toString().padLeft(2,'0')}:'
+               '${dt.minute.toString().padLeft(2,'0')}';
+      }
+      // HH:mm:ss ou HH:mm
+      return s.length >= 5 ? s.substring(0, 5) : s;
+    } catch (_) { return s; }
+  }
+
   Color  _statusColor(String s) {
     switch (s) {
       case 'in_progress': return Colors.blue;
@@ -184,8 +222,8 @@ class _THState extends State<TripHistoryPage> with SingleTickerProviderStateMixi
     final status    = (t['status'] ?? 'pending').toString();
     final departure = t['departure'] ?? t['pickup_address'] ?? '';
     final dest      = t['destination'] ?? t['dropoff_address'] ?? '';
-    final date      = (t['departure_date'] ?? '').toString();
-    final time      = (t['departure_time'] ?? '').toString();
+    final date      = _fmtDate(t['departure_date']);
+    final time      = _fmtTime(t['departure_time']);
     final price     = (t['price_per_seat'] ?? t['amount'] ?? 0);
     final seats     = t['available_seats'] ?? 0;
     final confirmed = t['confirmed_seats'] ?? 0;

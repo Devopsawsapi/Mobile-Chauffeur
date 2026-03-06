@@ -37,7 +37,7 @@ class _LoginState extends State<LoginScreen> {
   final _phoneCtrl    = TextEditingController();
   final _emailCtrl    = TextEditingController();
   final _passCtrl     = TextEditingController();
-  final _resetCtrl    = TextEditingController();
+  // _resetCtrl supprimé : le dialog crée ses propres controllers locaux
   bool _obscure           = true;
   bool _loading           = false;
   bool _usePhone          = true;
@@ -103,46 +103,122 @@ class _LoginState extends State<LoginScreen> {
 
   // ── Réinitialisation mot de passe ──────────────────────────────────
   void _showResetDialog() {
-    showDialog(context: context, builder: (_) => AlertDialog(
-      backgroundColor: C.card,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: const Text('Mot de passe oublié ?',
-        style: TextStyle(color: C.text, fontWeight: FontWeight.w800)),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        const Text(
-          'Entrez votre numéro de téléphone ou email pour recevoir un lien de réinitialisation.',
-          style: TextStyle(color: C.muted, fontSize: 13, height: 1.5)),
-        const SizedBox(height: 16),
-        TF(hint: 'Téléphone ou email', label: '📱 Identifiant',
-          ctrl: _resetCtrl, type: TextInputType.emailAddress),
-      ]),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context),
-          child: const Text('Annuler', style: TextStyle(color: C.muted))),
-        GestureDetector(
-          onTap: () async {
-            final id = _resetCtrl.text.trim();
-            if (id.isEmpty) return;
-            Navigator.pop(context);
-            final res = await ApiService.post(Api.forgotPassword, {
-              id.contains('@') ? 'email' : 'phone': id,
-            });
-            if (mounted) snack(context,
-              res['success'] == true
-                ? '✅ Instructions envoyées par SMS/email.'
-                : res['message'] ?? 'Erreur',
-              error: res['success'] != true);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+    final phoneCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    // 0 = par téléphone, 1 = par email
+    int mode = 0;
+
+    showDialog(context: context, builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setDlgState) => AlertDialog(
+        backgroundColor: C.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(children: [
+          Icon(Icons.lock_reset_rounded, color: C.orange, size: 22),
+          SizedBox(width: 10),
+          Text('Mot de passe oublié ?',
+            style: TextStyle(color: C.text, fontWeight: FontWeight.w800, fontSize: 16)),
+        ]),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+
+          // ── Toggle SMS / Email ──────────────────────────────────
+          Container(
             decoration: BoxDecoration(
-              color: C.orange,
-              borderRadius: BorderRadius.circular(10)),
-            child: const Text('Envoyer',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800))),
-        ),
-      ],
-    ));
+              color: C.surface,
+              borderRadius: BorderRadius.circular(12)),
+            child: Row(children: [
+              Expanded(child: GestureDetector(
+                onTap: () => setDlgState(() => mode = 0),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: mode == 0 ? C.orange : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12)),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.sms_rounded,
+                      color: mode == 0 ? Colors.white : C.muted, size: 16),
+                    const SizedBox(width: 6),
+                    Text('Par SMS',
+                      style: TextStyle(
+                        color: mode == 0 ? Colors.white : C.muted,
+                        fontWeight: FontWeight.w700, fontSize: 13)),
+                  ])))),
+              Expanded(child: GestureDetector(
+                onTap: () => setDlgState(() => mode = 1),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: mode == 1 ? C.orange : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12)),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.email_rounded,
+                      color: mode == 1 ? Colors.white : C.muted, size: 16),
+                    const SizedBox(width: 6),
+                    Text('Par Email',
+                      style: TextStyle(
+                        color: mode == 1 ? Colors.white : C.muted,
+                        fontWeight: FontWeight.w700, fontSize: 13)),
+                  ])))),
+            ])),
+
+          const SizedBox(height: 16),
+
+          // ── Champ selon le mode ─────────────────────────────────
+          if (mode == 0) ...[
+            const Text('Entrez votre numéro de téléphone pour recevoir un code par SMS.',
+              style: TextStyle(color: C.muted, fontSize: 12, height: 1.5)),
+            const SizedBox(height: 12),
+            TF(
+              hint: '+242 06 000 0000',
+              label: '📱 Numéro de téléphone',
+              ctrl: phoneCtrl,
+              type: TextInputType.phone),
+          ] else ...[
+            const Text('Entrez votre adresse email pour recevoir un lien de réinitialisation.',
+              style: TextStyle(color: C.muted, fontSize: 12, height: 1.5)),
+            const SizedBox(height: 12),
+            TF(
+              hint: 'exemple@email.com',
+              label: '✉️ Adresse email',
+              ctrl: emailCtrl,
+              type: TextInputType.emailAddress),
+          ],
+        ]),
+
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler', style: TextStyle(color: C.muted))),
+          GestureDetector(
+            onTap: () async {
+              final phone = phoneCtrl.text.trim();
+              final email = emailCtrl.text.trim();
+              final value = mode == 0 ? phone : email;
+              if (value.isEmpty) return;
+
+              Navigator.pop(ctx);
+
+              final body = mode == 0
+                ? {'phone': value}   // ✅ Envoie phone séparément
+                : {'email': value};  // ✅ Envoie email séparément
+
+              final res = await ApiService.post(Api.forgotPassword, body);
+              if (mounted) snack(context,
+                res['success'] == true
+                  ? mode == 0
+                    ? '✅ Code SMS envoyé au $value'
+                    : '✅ Email de réinitialisation envoyé à $value'
+                  : res['message'] ?? 'Erreur',
+                error: res['success'] != true);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: C.orange, borderRadius: BorderRadius.circular(10)),
+              child: const Text('Envoyer',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800))),
+          ),
+        ],
+      )));
   }
 
   @override
