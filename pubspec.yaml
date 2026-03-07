@@ -25,6 +25,11 @@ dependencies:
   # ── Liens externes (appel téléphonique, email) ──
   url_launcher: ^6.2.0           # ✅ AJOUTÉ — bouton appel dans chat + liens
 
+  # ── Appels voix in-app (Agora RTC) ──────────────────────────────
+  agora_rtc_engine: ^6.3.2       # ✅ AJOUTÉ — appels voix/vidéo (WhatsApp-like)
+  permission_handler: ^11.3.1    # ✅ AJOUTÉ — permissions micro & caméra
+  wakelock_plus: ^1.2.8          # ✅ AJOUTÉ — écran allumé pendant l'appel
+
   # ── Utilitaires ──
   intl: ^0.20.2
   flutter_spinkit: ^5.2.0
